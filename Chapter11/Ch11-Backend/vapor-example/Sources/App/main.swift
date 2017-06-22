@@ -1,5 +1,6 @@
 import Vapor
 import HTTP
+import Foundation
 
 /**
     Droplets are service containers that make accessing
@@ -229,20 +230,56 @@ drop.get("localization", String.self) {
 /* Swift 3 Functional Programming - Start */
 
 /// Post a todo item
+//drop.post("postAllTodo") {
+//    request in
+//    var listOfTodosFromPostToAll = [Todo]()
+//    var todos : TodoStore?
+//    guard let listOfDicOfHeaders = request.data["allTodo"]?.array  else {
+//        return try JSON(node: ["message": "first"])
+//    }
+//    guard let listOfDicOfHeaders2 = listOfDicOfHeaders as? [[String: String]] else {
+//        return try JSON(node: ["message": "second"])
+//    }
+//  
+//    for dicOfHeaders in listOfDicOfHeaders2 {
+//    guard let id = dicOfHeaders["id"]?.int,
+//        let name = dicOfHeaders["name"]?.string,
+//        let description = dicOfHeaders["description"]?.string,
+//        let notes = dicOfHeaders["notes"]?.string,
+//        let completed = dicOfHeaders["completed"]?.bool,
+//        let synced = dicOfHeaders["synced"]?.bool,
+//        let dueDate = dicOfHeaders["dueDate"]?.string,
+//        let startingDate = dicOfHeaders["startingDate"]?.string
+//        else {
+//            return try JSON(node: ["message": "Please include mandatory parameters"])
+//    }
+//    
+//    let todoItem = Todo(todoId: id, name: name, description: description, notes: notes, completed: completed, synced: synced, dueDate: Todo.dateFromString(dueDate)!, startingDate: Todo.dateFromString(startingDate)!)
+//    listOfTodosFromPostToAll.append(todoItem)
+//    todos = TodoStore.sharedInstance
+//    todos?.addAllItems(allItem: listOfTodosFromPostToAll)
+//    }
+//    let json: [Todo] = todos!.listItems()
+//    return try JSON(node: json)
+//}
+
+/// Post a todo item
 drop.post("postTodo") {
     request in
     
     guard let id = request.headers["id"]?.int,
-        let name = request.headers["name"],
-        let description = request.headers["description"],
-        let notes = request.headers["notes"],
-        let completed = request.headers["completed"],
-        let synced = request.headers["synced"]
+        let name = request.headers["name"]?.string,
+        let description = request.headers["description"]?.string,
+        let notes = request.headers["notes"]?.string,
+        let completed = request.headers["completed"]?.bool,
+        let synced = request.headers["synced"]?.bool,
+        let dueDate = request.headers["dueDate"]?.string,
+        let startingDate = request.headers["startingDate"]?.string
         else {
             return try JSON(node: ["message": "Please include mandatory parameters"])
     }
     
-    let todoItem = Todo(todoId: id, name: name, description: description, notes: notes, completed: completed.toBool()!, synced: synced.toBool()!)
+    let todoItem = Todo(todoId: id, name: name, description: description, notes: notes, completed: completed, synced: synced, dueDate: Todo.dateFromString(dueDate)!, startingDate: Todo.dateFromString(startingDate)!)
     
     let todos = TodoStore.sharedInstance
     todos.addOrUpdateItem(item: todoItem)
@@ -250,14 +287,37 @@ drop.post("postTodo") {
     let json: [Todo] = todos.listItems()
     return try JSON(node: json)
 }
+// post login
+drop.post("postLogin") {
+    request in
+    
+    guard let userName = request.headers["userName"]?.string,
+        let password = request.headers["password"]?.string
+   else  {
+            return try JSON(node: ["message": "Please include mandatory parameters"])
+    }
+    
+    let loginItem = Login(userName: userName, password: password)
+    
+    let loginx = LoginStore.sharedInstance
+    loginx.addOrUpdateItem(item: loginItem)
+    
+    let json: Login = loginx.login!
+    return try JSON(node: json)
+}
 
+
+
+
+TodoStore.sharedInstance.addInstantiateX()
 /// List todo items
 drop.get("todos") {
     request in
-    
     let todos = TodoStore.sharedInstance
     let json: [Todo] = todos.listItems()
-    return try JSON(node: json)
+    var finalJson = try JSON(node: json)
+    print("ddddd \(finalJson)")
+    return finalJson
 }
 
 /// Get a specific todo item
@@ -307,7 +367,9 @@ drop.post("updateTodo") { request in
         let description = request.headers["description"],
         let notes = request.headers["notes"],
         let completed = request.headers["completed"],
-        let synced = request.headers["synced"]
+        let synced = request.headers["synced"],
+    let dueDate = request.headers["dueDate"]?.string,
+    let startingDate = request.headers["startingDate"]?.string
         else {
             return try JSON(node: ["message": "Please include mandatory parameters"])
     }
@@ -317,12 +379,64 @@ drop.post("updateTodo") { request in
                         description: description,
                         notes: notes,
                         completed: completed.toBool()!,
-                        synced: synced.toBool()!)
+                        synced: synced.toBool()!,
+                        dueDate: Todo.dateFromString(dueDate)!,
+                        startingDate: Todo.dateFromString(startingDate)!
+                        )
     
     let todos = TodoStore.sharedInstance
     let message = todos.update(item: todoItem)
     return try JSON(node: ["message": message])
 }
+
+drop.get("login") {
+    
+    request in
+    
+    guard let userName = request.headers["userName"],
+        
+        let password = request.headers["password"]
+        
+        else {
+            
+            return try JSON(node: ["success": false])
+            
+    }
+    
+    var resultJSON = [String: Bool]()
+    var userAnswer = LoginStore.sharedInstance
+    var userNameAnswer = userAnswer.login?.userName
+    var passwordAnswer = userAnswer.login?.password
+    if userName == userNameAnswer && password == passwordAnswer {
+        
+        resultJSON = ["success": true]
+        
+    } else {
+        
+        resultJSON = ["success": false]
+        
+    }
+    
+    return try JSON(node: resultJSON)
+    
+}
+
+
+//drop.get("login"){
+//    request in
+//    guard let userName = request.headers["userName"],
+//    let pass = request.headers["pass"]
+//        else {
+//            return try JSON(node : ["massage" : "please provide "])
+//    }
+//    var resultHSON = [String : String]()
+//    if userName == "user" && pass == "pass"{
+//        resultHSON = ["massege": "ok"]
+//    }else{
+//       resultHSON = ["massege": "no ok"]
+//    }
+//    return try JSON(node : resultHSON)
+//}
 
 /* Swift 3 Functional Programming - End */
 
